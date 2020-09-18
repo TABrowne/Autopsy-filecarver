@@ -86,7 +86,6 @@ from org.sleuthkit.autopsy.ingest import IngestServices
 from org.sleuthkit.autopsy.ingest import ModuleDataEvent
 from org.sleuthkit.autopsy.coreutils import Logger
 from org.sleuthkit.autopsy.coreutils import PlatformUtil
-from org.sleuthkit.autopsy.coreutils import FileTypeUtils
 from org.sleuthkit.autopsy.casemodule import Case
 from org.sleuthkit.autopsy.casemodule.services import Services
 from org.sleuthkit.autopsy.casemodule.services import FileManager
@@ -215,26 +214,40 @@ class CarverFilesIngestModule(DataSourceIngestModule):
         if "All_Mime_Types" in self.List_Of_tables:
             files = fileManager.findFiles(dataSource, "%")
             if "Include_Slack_Space" in self.List_Of_tables:
-                files=[i for i in files if (i.getSize() > 1000)]
+                files=[i for i in files if (i.getSize() > 500)]
                 numFiles = len(files)
             else:
-                files=[i for i in files if (i.getSize() > 1000) and not i.getName().endswith("-slack")]			
+                files=[i for i in files if (i.getSize() > 500) and not i.getName().endswith("-slack") ]			
                 numFiles = len(files)		
         else:
             files = fileManager.findFilesByMimeType(self.mimeTypesToFind)
             if "Include_Slack_Space" in self.List_Of_tables:
-                files=[i for i in files if (i.getSize() > 1000)]
+                files=[i for i in files if (i.getSize() > 500)]
                 numFiles = len(files)
             else:
-                files=[i for i in files if (i.getSize() > 1000) and not i.getName().endswith("-slack") ]			
+                files=[i for i in files if (i.getSize() > 500) and not i.getName().endswith("-slack") ]			
                 numFiles = len(files)       
 
-			
+ #       if "Default_Mime_Types" in self.List_Of_tables:
+ #           files = fileManager.findFilesByMimeType(self.mimeTypesToFind)
+ #           if "Include_Slack_Space" in self.List_Of_tables:
+ #               files=[i for i in files if (i.getSize() > 1000)]
+ #               numFiles = len(files)
+ #           else:
+ #               files=[i for i in files if (i.getSize() > 1000) and not i.getName().endswith("-slack") ]			
+ #               numFiles = len(files)
+ #       else:
+ #           files = fileManager.findFiles(dataSource, "%")
+ #           if "Include_Slack_Space" in self.List_Of_tables:
+ #               files=[i for i in files if (i.getSize() > 1000)]
+ #               numFiles = len(files)
+ #           else:
+ #               files=[i for i in files if (i.getSize() > 1000) and not i.getName().endswith("-slack") ]			
+ #               numFiles = len(files)			
 		self.log(Level.INFO, "found " + str(numFiles) + " files")
         progressBar.switchToDeterminate(numFiles)
         fileCount = 0
         FileExtractCount=0
-        Resultsdir=0
         Temp_Dir = Case.getCurrentCase().getModulesOutputDirAbsPath()
         tmp_dir = Case.getCurrentCase().getTempDirectory()
         if PlatformUtil.isWindowsOS():
@@ -264,14 +277,7 @@ class CarverFilesIngestModule(DataSourceIngestModule):
 
             # Make an artifact on the blackboard.  TSK_INTERESTING_FILE_HIT is a generic type of
             # artfiact.  Refer to the developer docs for other examples.
-                art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT)
-                att = BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME, CarverFilesIngestModuleFactory.moduleName, "New Carved Data and Sqlite Files")
-                art.addAttribute(att)
-                try:
-                # index the artifact for keyword search
-                    skCase.getBlackboard().postArtifact(art, moduleName)
-                except Blackboard.BlackboardException as e:
-                    self.log(Level.SEVERE, "Error indexing artifact " + art.getDisplayName())
+
 
                 fileGetName=file.getName()
 				
@@ -280,62 +286,72 @@ class CarverFilesIngestModule(DataSourceIngestModule):
                 else:
                     fileGetName=file.getName()
                     if PlatformUtil.isWindowsOS():				
-                        out_dir = os.path.join(Temp_Dir + "\Carved-Foremost", str(file.getId()) + "-" + fileGetName)
+                        out_dir = os.path.join(Temp_Dir + "\Carved-Foremost", str(file.getId()))
                         try:
-                           os.mkdir(Temp_Dir + "\Carved-Foremost\\" + str(file.getId()) + "-" + fileGetName)
+                           os.mkdir(Temp_Dir + "\Carved-Foremost\\" + str(file.getId()))
                         except:
                            self.log(Level.INFO, str(file.getId()) + " Directory already exists " + Temp_Dir)
                     else:
-                        out_dir = os.path.join(Temp_Dir + "/Carved-Foremost", str(file.getId()) + "-" + fileGetName)
+                        out_dir = os.path.join(Temp_Dir + "/Carved-Foremost", str(file.getId()))
                         try:
-                            os.mkdir(Temp_Dir + "/Carved-Foremost/" + str(file.getId()) + "-" + fileGetName)
+                            os.mkdir(Temp_Dir + "/Carved-Foremost/" + str(file.getId()))
                         except:
                             self.log(Level.INFO, str(file.getId()) + " Directory already exists " + Temp_Dir)
                 lclDbPath=os.path.join(tmp_dir, str(file.getId()) + "-" + fileGetName)
-                ContentUtils.writeToFile(file, File(lclDbPath))
-                
+                try:
+                    ContentUtils.writeToFile(file, File(lclDbPath))
+                except:
+                    pass
                 # Check if output directory exists and if it does then delete it, this may happen with a rerun
                 if os.path.exists(out_dir):
                     shutil.rmtree(out_dir)
-				
-                self.log(Level.INFO, "Running prog ==> " + self.path_to_exe_foremost + " -t " + "jpeg,png,bmp,gif" + " -o " + out_dir + " -i " + lclDbPath)
-                pipe = Popen([self.path_to_exe_foremost, "-t" + "jpeg,png,bmp,gif", "-o", out_dir, "-i", lclDbPath], stdout=PIPE, stderr=PIPE)
-                out_text = pipe.communicate()[0]
-                self.log(Level.INFO, "Output from run is ==> " + out_text)
+		if os.path.exists(lclDbPath):
+                    self.log(Level.INFO, "Running prog ==> " + self.path_to_exe_foremost + " -t " + "jpeg,png,bmp,gif" + " -o " + out_dir + " -i " + lclDbPath)
+                    pipe = Popen([self.path_to_exe_foremost, "-t" + "jpeg,png,bmp,gif", "-o", out_dir, "-i", lclDbPath], stdout=PIPE, stderr=PIPE)
+                    out_text = pipe.communicate()[0]
+                    self.log(Level.INFO, "Output from run is ==> " + out_text)
                 
-                if len(os.listdir(out_dir)) == 1:
-                    shutil.rmtree(out_dir)
-                else:
-                    Resultsdir=Resultsdir+1
-                    redactresults = out_dir  
-                    auditLog = os.path.join(redactresults,"audit.txt")
-                    if os.path.exists(auditLog):
-                        os.remove(auditLog)			
-                    imagedirs = os.listdir(redactresults)
-                    for imagedir in imagedirs:
-                        jpgpath=os.path.join(redactresults,imagedir)
-                        imagejpgs=os.listdir(jpgpath)
-                        for imagejpg in imagejpgs:
-                            srcfile=os.path.join(jpgpath,imagejpg)
-                            dstfile=os.path.join(redactresults,imagejpg)
-                            shutil.move(srcfile,dstfile)
-                        shutil.rmtree(jpgpath)
-                    extractedfiles = next(os.walk(out_dir))[2]
-                    for extractfile in extractedfiles:
-                        FileExtractCount=FileExtractCount+1					
-                        self.log(Level.INFO, " File Name is ==> " + extractfile)
-                        if PlatformUtil.isWindowsOS():
-                            relativeModulepath=Case.getCurrentCase().getModuleOutputDirectoryRelativePath() + "\Carved-Foremost"
-                        else:
-                            relativeModulepath=Case.getCurrentCase().getModuleOutputDirectoryRelativePath() + "/Carved-Foremost"
-                        relativeCarvedpath=os.path.join(relativeModulepath, str(file.getId()) + "-" + file.getName()) 
-                        relativelocal_file = os.path.join(relativeCarvedpath, extractfile)
-                        local_file = os.path.join(out_dir,extractfile)						
-                        self.log(Level.INFO, " Local File Name is ==> " + local_file)
-               
-                        derived_file=skCase.addDerivedFile(extractfile, relativelocal_file, os.path.getsize(local_file), 0, 0, 0, 0, True, file, "", "foremost", "1.5", "", TskData.EncodingType.NONE)
+                    if len(os.listdir(out_dir)) == 1:
+                        shutil.rmtree(out_dir)
+                    else:
+                        art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT)
+                        att = BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME, CarverFilesIngestModuleFactory.moduleName, "New Carved Data and Sqlite Files")
+                        art.addAttribute(att)
+                        try:
+                # index the artifact for keyword search
+                            skCase.getBlackboard().postArtifact(art, moduleName)
+                        except Blackboard.BlackboardException as e:
+                            self.log(Level.SEVERE, "Error indexing artifact " + art.getDisplayName())
                         
-                        IngestServices.getInstance().fireModuleContentEvent(ModuleContentEvent(derived_file))
+                        redactresults = out_dir  
+                        auditLog = os.path.join(redactresults,"audit.txt")
+                        if os.path.exists(auditLog):
+                            os.remove(auditLog)			
+                        imagedirs = os.listdir(redactresults)
+                        for imagedir in imagedirs:
+                            jpgpath=os.path.join(redactresults,imagedir)
+                            imagejpgs=os.listdir(jpgpath)
+                            for imagejpg in imagejpgs:
+                                srcfile=os.path.join(jpgpath,imagejpg)
+                                dstfile=os.path.join(redactresults,imagejpg)
+                                shutil.move(srcfile,dstfile)
+                            shutil.rmtree(jpgpath)
+                        extractedfiles = next(os.walk(out_dir))[2]
+                        for extractfile in extractedfiles:
+                            FileExtractCount=FileExtractCount+1					
+                            self.log(Level.INFO, " File Name is ==> " + extractfile)
+                            if PlatformUtil.isWindowsOS():
+                                 relativeModulepath=Case.getCurrentCase().getModuleOutputDirectoryRelativePath() + "\Carved-Foremost"
+                            else:
+                                 relativeModulepath=Case.getCurrentCase().getModuleOutputDirectoryRelativePath() + "/Carved-Foremost"
+                            relativeCarvedpath=os.path.join(relativeModulepath, str(file.getId()) + "-" + file.getName()) 
+                            relativelocal_file = os.path.join(relativeCarvedpath, extractfile)
+                            local_file = os.path.join(out_dir,extractfile)						
+                            self.log(Level.INFO, " Local File Name is ==> " + local_file)
+               
+                            derived_file=skCase.addDerivedFile(extractfile, relativelocal_file, os.path.getsize(local_file), 0, 0, 0, 0, True, file, "", "foremost", "1.5", "", TskData.EncodingType.NONE)
+                        
+                            IngestServices.getInstance().fireModuleContentEvent(ModuleContentEvent(derived_file))
 
 
             # Update the progress bar
@@ -344,11 +360,11 @@ class CarverFilesIngestModule(DataSourceIngestModule):
 
         #Post a message to the ingest messages in box.
         message = IngestMessage.createMessage(IngestMessage.MessageType.DATA,
-            "File Carver Module", "Processed %d files" % fileCount)
+            "File Carver Module", "Found %d files" % fileCount)
         IngestServices.getInstance().postMessage(message)
 
         message2 = IngestMessage.createMessage(IngestMessage.MessageType.DATA,
-            "File Carver Module", "Found %d images in %d files " % (FileExtractCount,Resultsdir))
+            "File Carver Module", "Found %d images in %d files " % (FileExtractCount,fileCount))
         IngestServices.getInstance().postMessage(message2)
 		
         return IngestModule.ProcessResult.OK              
@@ -395,16 +411,11 @@ class NEWProcess_AmcacheWithUISettingsPanel(IngestModuleIngestJobSettingsPanel):
         self.panel1 = JPanel()
         self.panel1.setLayout(BoxLayout(self.panel1, BoxLayout.Y_AXIS))
         self.panel1.setAlignmentY(JComponent.LEFT_ALIGNMENT)
-        self.label1 = JLabel("*** The file type identification module must first be run")
-        self.label2 = JLabel("..Otherwise it will fail..")
-        self.label3 = JLabel(" ")
-        self.label4 = JLabel("*** Default mime types.")
+        self.label1 = JLabel("*** Default mime types.")
+        self.label2 = JLabel(" ")
+        self.label3 = JLabel("octet-stream x-splite3 vnd.ms-excel.sheet.4 msoffice")
+        self.label4 = JLabel("msword vnd.ms-excel vnd.ms-powerpoint")
         self.label5 = JLabel(" ")
-        self.label6 = JLabel("octet-stream x-splite3 vnd.ms-excel.sheet.4 msoffice")
-        self.label7 = JLabel("msword vnd.ms-excel vnd.ms-powerpoint")
-        self.label8 = JLabel(" ")
-        self.label9 = JLabel("Choosing Include slack space can be considerably slower to run")
-        self.label10 = JLabel(" ")
         self.checkbox = JCheckBox("Default Mime Types Files", actionPerformed=self.checkBoxEvent)
         self.checkbox1 = JCheckBox("All Mime Types Files", actionPerformed=self.checkBoxEvent)
         self.checkbox2 = JCheckBox("Include Slack Space Of Files", actionPerformed=self.checkBoxEvent)
@@ -413,11 +424,6 @@ class NEWProcess_AmcacheWithUISettingsPanel(IngestModuleIngestJobSettingsPanel):
         self.panel1.add(self.label3)
         self.panel1.add(self.label4)
         self.panel1.add(self.label5)
-        self.panel1.add(self.label6)
-        self.panel1.add(self.label7)
-        self.panel1.add(self.label8)
-        self.panel1.add(self.label9)
-        self.panel1.add(self.label10)		
         self.panel1.add(self.checkbox)
         self.panel1.add(self.checkbox1)
         self.panel1.add(self.checkbox2)
