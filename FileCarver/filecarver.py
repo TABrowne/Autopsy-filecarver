@@ -313,6 +313,7 @@ class CarverFilesIngestModule(DataSourceIngestModule):
                 
                     if len(os.listdir(out_dir)) == 1:
                         shutil.rmtree(out_dir)
+			os.remove(lclDbPath)
                     else:
                         art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT)
                         att = BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME, CarverFilesIngestModuleFactory.moduleName, "New Carved Data and Sqlite Files")
@@ -352,11 +353,11 @@ class CarverFilesIngestModule(DataSourceIngestModule):
                             derived_file=skCase.addDerivedFile(extractfile, relativelocal_file, os.path.getsize(local_file), 0, 0, 0, 0, True, file, "", "foremost", "1.5", "", TskData.EncodingType.NONE)
                         
                             IngestServices.getInstance().fireModuleContentEvent(ModuleContentEvent(derived_file))
-
+                        os.remove(lclDbPath)
 
             # Update the progress bar
             progressBar.progress(fileCount)
-            os.remove(lclDbPath)
+            
 
         #Post a message to the ingest messages in box.
         message = IngestMessage.createMessage(IngestMessage.MessageType.DATA,
