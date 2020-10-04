@@ -356,7 +356,7 @@ class CarverFilesIngestModule(DataSourceIngestModule):
 
             # Update the progress bar
             progressBar.progress(fileCount)
-            rm lclDbPath
+            os.remove(lclDbPath)
 
         #Post a message to the ingest messages in box.
         message = IngestMessage.createMessage(IngestMessage.MessageType.DATA,
