@@ -297,7 +297,7 @@ class CarverFilesIngestModule(DataSourceIngestModule):
                             os.mkdir(Temp_Dir + "/Carved-Foremost/" + str(file.getId()))
                         except:
                             self.log(Level.INFO, str(file.getId()) + " Directory already exists " + Temp_Dir)
-                lclDbPath=os.path.join(tmp_dir, str(file.getId()) + "-" + fileGetName)
+                lclDbPath=os.path.join(tmp_dir, str(file.getId()))
                 try:
                     ContentUtils.writeToFile(file, File(lclDbPath))
                 except:
@@ -356,7 +356,7 @@ class CarverFilesIngestModule(DataSourceIngestModule):
 
             # Update the progress bar
             progressBar.progress(fileCount)
-
+            rm lclDbPath
 
         #Post a message to the ingest messages in box.
         message = IngestMessage.createMessage(IngestMessage.MessageType.DATA,
