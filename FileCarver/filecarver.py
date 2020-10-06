@@ -180,7 +180,7 @@ class CarverFilesIngestModule(DataSourceIngestModule):
         self.log(Level.INFO, str(self.List_Of_tables) + " >> " + str(len(self.List_Of_tables)))
 
         if "Default_Mime_Types" in self.List_Of_tables:
-            self.mimeTypesToFind =  ["application/octet-stream","application/x-sqlite3", "application/vnd.ms-excel.sheet.4", "application/msword", "application/x-msoffice","application/msoffice", "application/vnd.ms-excel", "application/vnd.ms-powerpoint" ]
+            self.mimeTypesToFind =  ["application/octet-stream","application/x-sqlite3", "application/vnd.ms-excel.sheet.4",  "application/x-msoffice","application/msword", "application/msoffice", "application/vnd.ms-excel", "application/vnd.ms-powerpoint" ]
 
         
         # Throw an IngestModule.IngestModuleException exception if there was a problem setting up
@@ -270,9 +270,8 @@ class CarverFilesIngestModule(DataSourceIngestModule):
             if self.context.isJobCancelled():
                 return IngestModule.ProcessResult.OK
              
-#            if (file.getSize() > 1000) and not file.getName().endswith("-slack"):
-#                self.log(Level.INFO, "Processing file: " + file.getName())
-            if (file.getSize() > 1000):
+
+            if ((file.getSize() > 1000) and (file.getType() != TskData.TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS) and (file.getType() != TskData.TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS) and (file.isFile() != False)):
                 self.log(Level.INFO, "Processing file: " + file.getName())
 
             # Make an artifact on the blackboard.  TSK_INTERESTING_FILE_HIT is a generic type of
