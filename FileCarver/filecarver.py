@@ -180,7 +180,7 @@ class CarverFilesIngestModule(DataSourceIngestModule):
         self.log(Level.INFO, str(self.List_Of_tables) + " >> " + str(len(self.List_Of_tables)))
 
         if "Default_Mime_Types" in self.List_Of_tables:
-            self.mimeTypesToFind =  ["application/octet-stream","application/x-sqlite3", "application/vnd.ms-excel.sheet.4", "application/msword", "application/msoffice", "application/vnd.ms-excel", "application/vnd.ms-powerpoint" ]
+            self.mimeTypesToFind =  ["application/octet-stream","application/x-sqlite3", "application/vnd.ms-excel.sheet.4", "application/msword", "application/x-msoffice","application/msoffice", "application/vnd.ms-excel", "application/vnd.ms-powerpoint" ]
 
         
         # Throw an IngestModule.IngestModuleException exception if there was a problem setting up
@@ -345,7 +345,7 @@ class CarverFilesIngestModule(DataSourceIngestModule):
                                  relativeModulepath=Case.getCurrentCase().getModuleOutputDirectoryRelativePath() + "\Carved-Foremost"
                             else:
                                  relativeModulepath=Case.getCurrentCase().getModuleOutputDirectoryRelativePath() + "/Carved-Foremost"
-                            relativeCarvedpath=os.path.join(relativeModulepath, str(file.getId()) + "-" + file.getName()) 
+                            relativeCarvedpath=os.path.join(relativeModulepath, str(file.getId())) 
                             relativelocal_file = os.path.join(relativeCarvedpath, extractfile)
                             local_file = os.path.join(out_dir,extractfile)						
                             self.log(Level.INFO, " Local File Name is ==> " + local_file)
